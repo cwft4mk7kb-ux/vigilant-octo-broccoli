@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>夏老板的成长日志</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoi547F6Liq57uf55qE57u865Oc5rqe5oqvIiwic2hvcnRfbmFtZSI6IuWHeui4quW6veS6rOmDveW6lw==">
+<style>
+:root{
+--light-green:#b8e4c9;
+--dark-green:#57a773;
+--text:#2c4938;
+--white:#ffffff;
+--gray:#f4f8f6;
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;color:var(--text);}
+body{background:var(--gray);display:flex;height:100vh;overflow:hidden;}
+.sidebar{width:260px;background:var(--light-green);transition:0.3s;overflow-y:auto;padding-top:20px;flex-shrink:0;}
+.sidebar.close{width:0;padding:0;overflow:hidden;}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.top-bar{padding:16px 20px;background:var(--white);display:flex;align-items:center;gap:12px;border-bottom:1px solid #e2efe7;}
+.toggle-btn{background:var(--dark-green);color:white;border:none;padding:8px 12px;border-radius:8px;font-size:15px;}
+.info-text{flex:1;}
+.time-text{font-weight:bold;font-size:17px;}
+.slogan{font-size:13px;color:#558868;margin-top:4px;}
+.content{flex:1;padding:20px;overflow-y:auto;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:14px 20px;cursor:pointer;transition:0.2s;}
+.nav-item:hover{background:rgba(87,167,115,0.18);}
+.nav-item i{font-size:20px;width:24px;text-align:center;}
+.card{background:white;border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 2px 10px #ddebe3;}
+.task-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #eff6f2;}
+.task-row:last-child{border:none;}
+.check-btn{width:36px;height:36px;border-radius:50%;border:none;font-size:18px;cursor:pointer;}
+.btn-ok{background:#c9eed7;color:#09642f;}
+.btn-no{background:#eee;color:#777;}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px;}
+.cal-day{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#f3f8f5;font-size:14px;position:relative;}
+.cal-day.tag1{background:var(--light-green);}
+.cal-day.tag2{background:var(--dark-green);color:white;}
+.cal-day.both{background:linear-gradient(135deg,var(--light-green) 50%,var(--dark-green) 50%);color:white;}
+.hidden{display:none;}
+</style>
+</head>
+<body>
+<div class="sidebar" id="sidebar">
+<div class="nav-item" data-page="checkin">
+<i>✅</i><span>每日打卡</span>
+</div>
+<div class="nav-item" data-page="babyedu">
+<i>📖</i><span>育儿知识</span>
+</div>
+<div class="nav-item" data-page="barre">
+<i>🤸</i><span>欧阳春晓芭杆运动</span>
+</div>
+<div class="nav-item" data-page="body">
+<i>🧘</i><span>体态管理</span>
+</div>
+<div class="nav-item" data-page="cognition">
+<i>💡</i><span>认知提升</span>
+</div>
+<div class="nav-item" data-page="ailearn">
+<i>🤖</i><span>AI知识学习</span>
+</div>
+<div class="nav-item" data-page="english">
+<i>🗣️</i><span>英语学习</span>
+</div>
+<div class="nav-item" data-page="note">
+<i>📝</i><span>随心记</span>
+</div>
+</div>
+<div class="main">
+<div class="top-bar">
+<button class="toggle-btn" id="toggleBtn">☰</button>
+<div class="info-text">
+<div class="time-text" id="timeBox"></div>
+<div class="slogan" id="sloganBox"></div>
+</div>
+</div>
+<div class="content" id="contentBox"></div>
+</div>
+
+<script>
+// 基础数据
+const TASKS = [
+"欧阳春晓芭杆运动",
+"体态管理训练",
+"育儿知识学习",
+"认知提升学习",
+"AI知识学习",
+"英语学习",
+"随心记记录",
+"日常阅读任务",
+"留白自由任务"
+];
+const pages = {};
+//侧边栏切换
+document.getElementById('toggleBtn').onclick=()=>{
+document.getElementById('sidebar').classList.toggle('close');
+}
+//更新时间
+function updateTime(){
+let now=new Date();
+document.getElementById('timeBox').innerText=now.toLocaleString('zh-CN');
+}
+setInterval(updateTime,1000);
+updateTime();
+
+//双语励志库
+const slogans = [
+["慢慢来，持续做，时间看得见。","Take your time and keep going, time will tell."],
+["先做好自己，再陪伴孩子。","Grow yourself first, then accompany your kid."],
+["每日微小进步，汇聚长期蜕变。","Small daily progress leads to lasting transformation."],
+["接纳不完美，允许自己休息。","Accept imperfection and allow yourself to rest."],
+["深耕能力，生活自会给出答案。","Keep improving, life will reward you eventually."]
+];
+function loadSlogan(){
+let idx=new Date().getDate()%slogans.length;
+let [cn,en]=slogans[idx];
+document.getElementById('sloganBox').innerText=`${cn}｜${en}`;
+}
+loadSlogan();
+
+//本地存储封装
+const DB={
+get(key){
+let s=localStorage.getItem(key);
+return s?JSON.parse(s):null;
+},
+set(key,val){
+localStorage.setItem(key,JSON.stringify(val));
+}
+}
+
+//页面渲染路由
+let currentPage="checkin";
+document.querySelectorAll('.nav-item').forEach(el=>{
+el.onclick=()=>{
+currentPage=el.dataset.page;
+renderPage();
+if(window.innerWidth<700) document.getElementById('sidebar').classList.add('close');
+}
+})
+
+function renderPage(){
+let html="";
+switch(currentPage){
+case "checkin":
+html=renderCheckin();break;
+case "babyedu":
+html=renderBabyEdu();break;
+case "barre":
+html=renderBarre();break;
+case "body":
+html=renderBody();break;
+case "cognition":
+html=renderCognition();break;
+case "ailearn":
+html=renderAI();break;
+case "english":
+html=renderEnglish();break;
+case "note":
+html=renderNote();break;
+}
+document.getElementById('contentBox').innerHTML=html;
+bindPageEvent();
+}
+
+//1.每日打卡页面
+function renderCheckin(){
+let today=new Date().toLocaleDateString();
+let dayData=DB.get('dayCheck')||{};
+if(!dayData[today]){
+dayData[today]=Array(TASKS.length).fill(false);
+DB.set('dayCheck',dayData);
+}
+let arr=dayData[today];
+let h=`<div class="card"><h3>📋 今日打卡清单</h3>`;
+TASKS.forEach((name,i)=>{
+h+=`<div class="task-row">
+<span>${i+1}.${name}</span>
+<div>
+<button class="check-btn ${arr[i]?'btn-ok':'btn-no'}" data-idx="${i}">${arr[i]?'✅':'❌'}</button>
+</div>
+</div>`;
+})
+h+=`</div>`;
+return h;
+}
+
+//打卡点击事件
+function bindPageEvent(){
+document.querySelectorAll('.check-btn').forEach(btn=>{
+btn.onclick=()=>{
+let today=new Date().toLocaleDateString();
+let dayData=DB.get('dayCheck');
+let i=Number(btn.dataset.idx);
+dayData[today][i]=!dayData[today][i];
+DB.set('dayCheck',dayData);
+renderPage();
+}
+})
+bindCalendar();
+}
+
+//日历渲染（芭杆/体态共用）
+function renderCalendar(type){
+let now=new Date();
+let y=now.getFullYear();
+let m=now.getMonth();
+let first=new Date(y,m,1);
+let last=new Date(y,m+1,0);
+let startWeek=first.getDay();
+let total=last.getDate();
+let record=DB.get('sportLog')||{};
+let html=`<div class="card"><h3>📅 ${y}年${m+1}月运动打卡日历</h3><div class="calendar-grid">`;
+for(let i=0;i<startWeek;i++) html+=`<div class="cal-day"></div>`;
+for(let d=1;d<=total;d++){
+let key=`${y}-${m+1}-${d}`;
+let log=record[key]||{barre:false,body:false};
+let cls="cal-day";
+if(log.barre&&log.body) cls+=" both";
+else if(log.barre) cls+=" tag1";
+else if(log.body) cls+=" tag2";
+html+=`<div class="${cls}" data-date="${key}">${d}</div>`;
+}
+html+=`</div></div>`;
+return html;
+}
+
+function bindCalendar(){
+document.querySelectorAll('.cal-day[data-date]').forEach(box=>{
+box.onclick=()=>{
+//运动打卡切换逻辑
+let k=box.dataset.date;
+let log=DB.get('sportLog')||{};
+if(!log[k]) log[k]={barre:false,body:false};
+if(currentPage=="barre") log[k].barre=!log[k].barre;
+if(currentPage=="body") log[k].body=!log[k].body;
+DB.set('sportLog',log);
+renderPage();
+}
+})
+}
+
+//芭杆页面
+function renderBarre(){
+let cal=renderCalendar();
+return cal+`<div class="card"><h3>🤸欧阳春晓芭杆运动</h3>
+<p>点击日历日期标记芭杆完成状态</p>
+<p style="margin-top:10px;">今日训练提示：站姿线条塑造训练</p>
+</div>`;
+}
+
+//体态管理页面
+function renderBody(){
+let cal=renderCalendar();
+return cal+`<div class="card"><h3>🧘体态管理训练</h3>
+<p>减脂｜瘦腿｜圆肩驼背｜骨盆前倾矫正</p>
+<p style="margin-top:10px;">今日训练：骨盆矫正居家无器械练习</p>
+<a href="#" style="color:var(--dark-green)">👉点击查看今日训练视频</a>
+</div>`;
+}
+
+//育儿知识页面
+function renderBabyEdu(){
+const eduList=[
+"3岁9个月专注力技巧：减少多玩具同时摆放，单次只提供1种探索材料",
+"面对孩子哭闹：先接纳情绪，不要立刻制止「不许哭」",
+"区分生产端体验和消费游乐，优先安排自然观察、动手劳作",
+"英语启蒙KissABC单次控制10-15分钟，屏幕学习必须搭配线下互动",
+"不要强迫分享，尊重孩子物品主权，循序渐进引导社交"
+];
+let idx=new Date().getDate()%eduList.length;
+let content=eduList[idx];
+return `<div class="card">
+<h3>📖 橙子（3岁9个月）今日育儿知识点</h3>
+<p style="margin-top:12px;line-height:1.7;">${content}</p>
+<button onclick="saveEduNote()" style="margin-top:12px;background:var(--dark-green);color:white;border:none;padding:8px 12px;border-radius:8px;">收藏到随心记</button>
+</div>`;
+}
+window.saveEduNote=()=>{
+let idx=new Date().getDate()%5;
+const eduList=[
+"3岁9个月专注力技巧：减少多玩具同时摆放，单次只提供1种探索材料",
+"面对孩子哭闹：先接纳情绪，不要立刻制止「不许哭」",
+"区分生产端体验和消费游乐，优先安排自然观察、动手劳作",
+"英语启蒙KissABC单次控制10-15分钟，屏幕学习必须搭配线下互动",
+"不要强迫分享，尊重孩子物品主权，循序渐进引导社交"
+];
+let note=DB.get("notes")||[];
+note.push({time:new Date().toLocaleString(),text:`【育儿知识点】${eduList[idx]}`});
+DB.set("notes",note);
+alert("已保存至随心记！");
+renderPage();
+}
+
+//认知提升
+function renderCognition(){
+const list=[
+"沟通思路：先倾听完整，再表达观点，减少急于反驳的习惯",
+"情绪管理：觉察内耗源头，区分「可控事情」和「无法改变的事情」",
+"为人处事：不急于证明自己，长期稳定的行动远胜于争辩",
+"社交思维：筛选同频人群，不必勉强维持消耗型人际关系"
+];
+let i=new Date().getDate()%list.length;
+return `<div class="card">
+<h3>💡认知提升｜今日思考题</h3>
+<p style="margin-top:10px;line-height:1.7;">${list[i]}</p>
+</div>`;
+}
+
+//AI知识学习
+function renderAI(){
+return `<div class="card">
+<h3>🤖AI知识学习（适配智能客服训练师）</h3>
+<p>学习方向：提示词工程｜智能体搭建｜WorkBuddy工作台优化</p>
+<p style="margin-top:10px;">今日学习任务：多专家分工模式搭建思路</p>
+<a href="#" style="color:var(--dark-green)">👉打开今日学习素材</a>
+</div>`;
+}
+
+//英语学习
+function renderEnglish(){
+const words=["apple苹果","tiger老虎","water水","sun太阳","flower花","house房子","bird小鸟","milk牛奶","book书本","friend朋友"];
+const sentence=["Have a nice day! 祝你度过美好的一天。","Take care of yourself.好好照顾自己。"]
+let wStr=words.join("｜");
+return `<div class="card">
+<h3>🗣️每日英语学习</h3>
+<p style="margin:10px 0;">【今日10个单词】<br>${wStr}</p>
+<p>【常用短句】<br>1.${sentence[0]}<br>2.${sentence[1]}</p>
+</div>`;
+}
+
+//随心记
+function renderNote(){
+let notes=DB.get("notes")||[];
+let h=`<div class="card">
+<h3>📝随心记</h3>
+<textarea id="noteInput" style="width:100%;height:100px;margin:10px 0;padding:10px;border:1px solid #d6e9dd;border-radius:8px;" placeholder="在这里输入你的记录..."></textarea>
+<button onclick="addNote()" style="background:var(--dark-green);color:white;border:none;padding:8px 14px;border-radius:8px;">保存笔记</button>
+</div>
+<div class="card"><h4>历史记录</h4>`;
+notes.slice().reverse().forEach(item=>{
+h+=`<div style="padding:8px 0;border-bottom:1px solid #eee;">
+<div style="font-size:12px;color:#666;">${item.time}</div>
+<div>${item.text}</div>
+</div>`;
+})
+h+=`</div>`;
+return h;
+}
+window.addNote=()=>{
+let val=document.getElementById('noteInput').value.trim();
+if(!val) return alert("请输入内容");
+let notes=DB.get("notes")||[];
+notes.push({time:new Date().toLocaleString(),text:val});
+DB.set("notes",notes);
+renderPage();
+}
+
+//初始化渲染
+renderPage();
+</script>
+</body>
+</html>
